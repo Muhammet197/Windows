@@ -1,21 +1,35 @@
 import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { translations } from '../i18n'
 
 const ENVIRONMENTS = ['webBrowser', 'desktop', 'terminal', 'mobile', 'api', 'database', 'cloud', 'other']
 const STATUSES = ['completed', 'inProgress', 'pending']
 const DEFAULT_CATEGORIES = ['frontend', 'backend', 'devops', 'design', 'testing', 'documentation', 'analysis', 'management']
 
-const empty = {
-  title: '',
-  category: '',
-  environment: 'webBrowser',
-  status: 'completed',
-  date: new Date().toISOString().split('T')[0],
-  duration: '',
-  tags: [],
-  steps: '',
-  notes: '',
+const statusColors = {
+  completed: 'bg-emerald-50 text-emerald-700 border-emerald-300 ring-emerald-500',
+  inProgress: 'bg-blue-50 text-blue-700 border-blue-300 ring-blue-500',
+  pending: 'bg-amber-50 text-amber-700 border-amber-300 ring-amber-500',
 }
+
+const empty = {
+  title: '', category: '', environment: 'webBrowser', status: 'completed',
+  date: new Date().toISOString().split('T')[0], duration: '', tags: [], steps: '', notes: '',
+}
+
+function Field({ label, required, children }) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+        {label}{required && <span className="text-red-400 ml-0.5">*</span>}
+      </label>
+      {children}
+    </div>
+  )
+}
+
+const input = "w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white transition-colors"
+const select = "w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors appearance-none"
 
 export default function WorkForm({ lang, onSave, onCancel, initial }) {
   const t = translations[lang]
@@ -34,9 +48,7 @@ export default function WorkForm({ lang, onSave, onCancel, initial }) {
     if (e.key === 'Enter' && tagInput.trim()) {
       e.preventDefault()
       const tag = tagInput.trim()
-      if (!form.tags.includes(tag)) {
-        set('tags', [...form.tags, tag])
-      }
+      if (!form.tags.includes(tag)) set('tags', [...form.tags, tag])
       setTagInput('')
     }
   }
@@ -45,13 +57,8 @@ export default function WorkForm({ lang, onSave, onCancel, initial }) {
 
   const handleCategoryChange = (e) => {
     const val = e.target.value
-    if (val === '__custom__') {
-      setUsingCustomCategory(true)
-      set('category', customCategory)
-    } else {
-      setUsingCustomCategory(false)
-      set('category', val)
-    }
+    if (val === '__custom__') { setUsingCustomCategory(true); set('category', customCategory) }
+    else { setUsingCustomCategory(false); set('category', val) }
   }
 
   const handleSubmit = (e) => {
@@ -60,198 +67,139 @@ export default function WorkForm({ lang, onSave, onCancel, initial }) {
     onSave({ ...form, category: usingCustomCategory ? customCategory : form.category })
   }
 
-  const statusColors = {
-    completed: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-    inProgress: 'bg-blue-100 text-blue-800 border-blue-200',
-    pending: 'bg-amber-100 text-amber-800 border-amber-200',
-  }
-
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 rounded-t-2xl flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {initial ? t.editTitle : t.formTitle}
-          </h2>
-          <button
-            onClick={onCancel}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
-          >
-            ✕
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 60 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 60 }}
+        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-2xl max-h-[92vh] overflow-y-auto"
+      >
+        {/* Header */}
+        <div className="sticky top-0 bg-white border-b border-slate-100 px-6 py-4 rounded-t-2xl flex items-center justify-between z-10">
+          <div>
+            <h2 className="text-base font-bold text-slate-800">{initial ? t.editTitle : t.formTitle}</h2>
+            <p className="text-xs text-slate-400 mt-0.5">{lang === 'tr' ? 'Tüm alanları doldurun' : 'Fill in all fields'}</p>
+          </div>
+          <button onClick={onCancel} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400 transition-colors text-lg">
+            ×
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           {/* Title */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              {t.jobTitle} <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={form.title}
-              onChange={(e) => set('title', e.target.value)}
-              placeholder={t.jobTitlePlaceholder}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              required
-            />
-          </div>
+          <Field label={t.jobTitle} required>
+            <input type="text" value={form.title} onChange={(e) => set('title', e.target.value)}
+              placeholder={t.jobTitlePlaceholder} className={input} required autoFocus />
+          </Field>
 
-          {/* Category + Status row */}
+          {/* Category + Status */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t.category}</label>
-              <select
-                value={usingCustomCategory ? '__custom__' : form.category}
-                onChange={handleCategoryChange}
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-              >
+            <Field label={t.category}>
+              <select value={usingCustomCategory ? '__custom__' : form.category} onChange={handleCategoryChange} className={select}>
                 <option value="">—</option>
-                {DEFAULT_CATEGORIES.map((c) => (
-                  <option key={c} value={c}>{t[c]}</option>
-                ))}
-                <option value="__custom__">{lang === 'tr' ? 'Diğer (özel)' : 'Other (custom)'}</option>
+                {DEFAULT_CATEGORIES.map((c) => <option key={c} value={c}>{t[c]}</option>)}
+                <option value="__custom__">{lang === 'tr' ? 'Özel...' : 'Custom...'}</option>
               </select>
               {usingCustomCategory && (
-                <input
-                  type="text"
-                  value={customCategory}
+                <input type="text" value={customCategory}
                   onChange={(e) => { setCustomCategory(e.target.value); set('category', e.target.value) }}
-                  placeholder={lang === 'tr' ? 'Kategori adı girin' : 'Enter category name'}
-                  className="mt-2 w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
+                  placeholder={lang === 'tr' ? 'Kategori adı' : 'Category name'}
+                  className={`${input} mt-2`} />
               )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t.status}</label>
-              <div className="flex gap-2 flex-wrap">
+            </Field>
+            <Field label={t.status}>
+              <div className="flex flex-col gap-1.5">
                 {STATUSES.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => set('status', s)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                      form.status === s ? statusColors[s] + ' ring-2 ring-offset-1 ring-current' : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
-                    }`}
-                  >
+                  <button key={s} type="button" onClick={() => set('status', s)}
+                    className={`w-full px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all text-left ${
+                      form.status === s
+                        ? `${statusColors[s]} ring-1 ring-offset-0`
+                        : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'
+                    }`}>
                     {t[s]}
                   </button>
                 ))}
               </div>
-            </div>
+            </Field>
           </div>
 
           {/* Environment */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">{t.environment}</label>
-            <div className="flex flex-wrap gap-2">
+          <Field label={t.environment}>
+            <div className="grid grid-cols-4 gap-1.5">
               {ENVIRONMENTS.map((env) => (
-                <button
-                  key={env}
-                  type="button"
-                  onClick={() => set('environment', env)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                <button key={env} type="button" onClick={() => set('environment', env)}
+                  className={`px-2 py-2 rounded-lg text-xs font-medium border transition-all text-center ${
                     form.environment === env
-                      ? 'bg-indigo-600 text-white border-indigo-600'
-                      : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
-                  }`}
-                >
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                  }`}>
                   {t[env]}
                 </button>
               ))}
             </div>
-          </div>
+          </Field>
 
           {/* Date + Duration */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t.date}</label>
-              <input
-                type="date"
-                value={form.date}
-                onChange={(e) => set('date', e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t.duration}</label>
-              <input
-                type="number"
-                value={form.duration}
-                onChange={(e) => set('duration', e.target.value)}
-                placeholder={t.durationPlaceholder}
-                min="0"
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
+            <Field label={t.date}>
+              <input type="date" value={form.date} onChange={(e) => set('date', e.target.value)} className={select} />
+            </Field>
+            <Field label={t.duration}>
+              <input type="number" value={form.duration} onChange={(e) => set('duration', e.target.value)}
+                placeholder={t.durationPlaceholder} min="0" className={input} />
+            </Field>
           </div>
 
           {/* Tags */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">{t.tags}</label>
-            <div className="flex flex-wrap gap-1.5 mb-2">
-              {form.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-medium"
-                >
-                  {tag}
-                  <button type="button" onClick={() => removeTag(tag)} className="hover:text-indigo-900">×</button>
-                </span>
-              ))}
-            </div>
-            <input
-              type="text"
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyDown={handleTagKey}
-              placeholder={t.tagsPlaceholder}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
+          <Field label={t.tags}>
+            {form.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {form.tags.map((tag) => (
+                  <span key={tag} className="inline-flex items-center gap-1 px-2.5 py-1 bg-violet-50 text-violet-700 rounded-full text-xs font-medium border border-violet-200">
+                    #{tag}
+                    <button type="button" onClick={() => removeTag(tag)} className="hover:text-violet-900 ml-0.5">×</button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <input type="text" value={tagInput} onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={handleTagKey} placeholder={t.tagsPlaceholder} className={input} />
+          </Field>
 
           {/* Steps */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">{t.steps}</label>
-            <textarea
-              value={form.steps}
-              onChange={(e) => set('steps', e.target.value)}
-              placeholder={t.stepsPlaceholder}
-              rows={5}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
-            />
-          </div>
+          <Field label={t.steps}>
+            <textarea value={form.steps} onChange={(e) => set('steps', e.target.value)}
+              placeholder={t.stepsPlaceholder} rows={5}
+              className={`${input} resize-y`} />
+          </Field>
 
           {/* Notes */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">{t.notes}</label>
-            <textarea
-              value={form.notes}
-              onChange={(e) => set('notes', e.target.value)}
-              placeholder={t.notesPlaceholder}
-              rows={3}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
-            />
-          </div>
+          <Field label={t.notes}>
+            <textarea value={form.notes} onChange={(e) => set('notes', e.target.value)}
+              placeholder={t.notesPlaceholder} rows={3}
+              className={`${input} resize-y`} />
+          </Field>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-2">
-            <button
-              type="submit"
-              className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors text-sm"
-            >
+          <div className="flex gap-3 pt-2 border-t border-slate-100">
+            <button type="submit"
+              className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 active:scale-[0.98] transition-all text-sm shadow-sm">
               {t.save}
             </button>
-            <button
-              type="button"
-              onClick={onCancel}
-              className="px-6 py-3 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors text-sm"
-            >
+            <button type="button" onClick={onCancel}
+              className="px-6 py-3 border border-slate-200 text-slate-600 rounded-xl font-medium hover:bg-slate-50 transition-colors text-sm">
               {t.cancel}
             </button>
           </div>
         </form>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   )
 }
