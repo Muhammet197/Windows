@@ -7,14 +7,12 @@ const statusConfig = {
   pending:    { text: 'text-amber-700',  bg: 'bg-amber-50',  border: 'border-amber-200' },
 }
 
-const envIcons = {
-  webBrowser: '🌐', desktop: '🖥️', terminal: '⌨️', mobile: '📱',
-  api: '🔌', database: '🗄️', cloud: '☁️', other: '📦',
-}
-
-export default function WorkDetail({ work, lang, onBack, onEdit, onDelete }) {
+export default function WorkDetail({ work, lang, onBack, onEdit, onDelete, categories = [], environments = [] }) {
   const t = translations[lang]
   const cfg = statusConfig[work.status] || statusConfig.pending
+
+  const cat = categories.find((c) => c.id === work.category)
+  const env = environments.find((e) => e.id === work.environment)
 
   const formatDate = (d) => {
     if (!d) return ''
@@ -33,7 +31,7 @@ export default function WorkDetail({ work, lang, onBack, onEdit, onDelete }) {
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 40 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
-      className="min-h-screen bg-slate-50"
+      className="min-h-screen bg-slate-100"
     >
       {/* Top bar */}
       <div className="bg-white border-b border-slate-200 px-4 py-3 sticky top-0 z-40">
@@ -57,12 +55,8 @@ export default function WorkDetail({ work, lang, onBack, onEdit, onDelete }) {
 
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-5">
         {/* Hero card */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-          className="bg-white rounded-xl border border-slate-200 p-6"
-        >
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+          className="bg-white rounded-xl border border-slate-200 p-6">
           <div className="flex items-start gap-4 mb-5">
             <div className="flex-1">
               <h1 className="text-xl font-bold text-slate-900 leading-snug">{work.title}</h1>
@@ -76,27 +70,27 @@ export default function WorkDetail({ work, lang, onBack, onEdit, onDelete }) {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {work.category && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm">
-                <span className="text-slate-400">🎯</span>
-                <span className="text-slate-700 font-medium text-xs">{t[work.category] || work.category}</span>
+            {cat && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-white shadow-sm"
+                style={{ backgroundColor: cat.color }}>
+                {cat.icon} {cat.label}
               </div>
             )}
-            {work.environment && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-lg text-sm">
-                <span className="text-sm">{envIcons[work.environment] || '📦'}</span>
-                <span className="text-blue-700 font-medium text-xs">{t[work.environment] || work.environment}</span>
+            {env && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white shadow-sm"
+                style={{ backgroundColor: env.color }}>
+                {env.icon} {env.label}
               </div>
             )}
             {work.date && (
               <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg">
-                <span className="text-slate-400 text-sm">📅</span>
+                <span className="text-slate-400">📅</span>
                 <span className="text-slate-700 font-medium text-xs">{formatDate(work.date)}</span>
               </div>
             )}
             {work.duration && (
               <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg">
-                <span className="text-slate-400 text-sm">⏱️</span>
+                <span className="text-slate-400">⏱️</span>
                 <span className="text-slate-700 font-medium text-xs">{work.duration} {t.minutes}</span>
               </div>
             )}
@@ -115,21 +109,17 @@ export default function WorkDetail({ work, lang, onBack, onEdit, onDelete }) {
 
         {/* Steps */}
         {work.steps && (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-white rounded-xl border border-slate-200 p-6"
-          >
-            <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <span className="w-6 h-6 bg-blue-600 text-white rounded-md flex items-center justify-center text-xs">📋</span>
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+            className="bg-white rounded-xl border border-slate-200 p-6">
+            <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <span className="w-5 h-5 bg-blue-600 text-white rounded flex items-center justify-center text-[10px]">📋</span>
               {t.howItWasDone}
             </h2>
             <div className="space-y-1.5">
               {work.steps.split('\n').map((line, i) =>
-                line.trim() ? (
-                  <p key={i} className="text-sm text-slate-700 leading-relaxed">{line}</p>
-                ) : <div key={i} className="h-2" />
+                line.trim()
+                  ? <p key={i} className="text-sm text-slate-700 leading-relaxed">{line}</p>
+                  : <div key={i} className="h-2" />
               )}
             </div>
           </motion.div>
@@ -137,20 +127,16 @@ export default function WorkDetail({ work, lang, onBack, onEdit, onDelete }) {
 
         {/* Notes */}
         {work.notes && (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="bg-amber-50 rounded-xl border border-amber-200 p-6"
-          >
-            <h2 className="text-sm font-bold text-amber-800 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+            className="bg-amber-50 rounded-xl border border-amber-200 p-6">
+            <h2 className="text-xs font-bold text-amber-800 uppercase tracking-wider mb-4 flex items-center gap-2">
               <span>📝</span> {t.additionalNotes}
             </h2>
             <div className="space-y-1.5">
               {work.notes.split('\n').map((line, i) =>
-                line.trim() ? (
-                  <p key={i} className="text-sm text-slate-700 leading-relaxed">{line}</p>
-                ) : <div key={i} className="h-2" />
+                line.trim()
+                  ? <p key={i} className="text-sm text-slate-700 leading-relaxed">{line}</p>
+                  : <div key={i} className="h-2" />
               )}
             </div>
           </motion.div>
