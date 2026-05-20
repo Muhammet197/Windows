@@ -4,6 +4,7 @@ const STORAGE_KEY = 'work-tracker-data'
 const LANG_KEY = 'work-tracker-lang'
 const CATEGORIES_KEY = 'work-tracker-categories'
 const ENVIRONMENTS_KEY = 'work-tracker-environments'
+const CHECKSTATE_KEY = 'work-tracker-checkstate'
 
 const DEFAULT_CATEGORIES = [
   { id: 'frontend',      label: 'Frontend',       icon: '💻', color: '#3b82f6', isDefault: true },
@@ -41,11 +42,13 @@ export function useStore() {
   const [lang, setLang] = useState(() => localStorage.getItem(LANG_KEY) || 'tr')
   const [categories, setCategories] = useState(() => loadFromStorage(CATEGORIES_KEY, DEFAULT_CATEGORIES))
   const [environments, setEnvironments] = useState(() => loadFromStorage(ENVIRONMENTS_KEY, DEFAULT_ENVIRONMENTS))
+  const [checkState, setCheckState] = useState(() => loadFromStorage(CHECKSTATE_KEY, {}))
 
   useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(works)) }, [works])
   useEffect(() => { localStorage.setItem(LANG_KEY, lang) }, [lang])
   useEffect(() => { localStorage.setItem(CATEGORIES_KEY, JSON.stringify(categories)) }, [categories])
   useEffect(() => { localStorage.setItem(ENVIRONMENTS_KEY, JSON.stringify(environments)) }, [environments])
+  useEffect(() => { localStorage.setItem(CHECKSTATE_KEY, JSON.stringify(checkState)) }, [checkState])
 
   // Works
   const addWork = (work) => {
@@ -75,10 +78,27 @@ export function useStore() {
   const updateEnvironment = (id, data) => setEnvironments((prev) => prev.map((e) => e.id === id ? { ...e, ...data } : e))
   const deleteEnvironment = (id) => setEnvironments((prev) => prev.filter((e) => e.id !== id))
 
+  // Checklist state per work
+  const getChecksFor = (workId) => checkState[workId] || {}
+  const setCheckFor = (workId, idx, value) => {
+    setCheckState((prev) => ({
+      ...prev,
+      [workId]: { ...(prev[workId] || {}), [idx]: value },
+    }))
+  }
+  const resetChecksFor = (workId) => {
+    setCheckState((prev) => {
+      const next = { ...prev }
+      delete next[workId]
+      return next
+    })
+  }
+
   return {
     works, addWork, updateWork, deleteWork,
     lang, toggleLang,
     categories, addCategory, updateCategory, deleteCategory,
     environments, addEnvironment, updateEnvironment, deleteEnvironment,
+    getChecksFor, setCheckFor, resetChecksFor,
   }
 }
